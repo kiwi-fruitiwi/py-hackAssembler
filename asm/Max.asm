@@ -6,6 +6,7 @@
 // Computes R2 = max(R0, R1)  (R0,R1,R2 refer to RAM[0],RAM[1],RAM[2])
 
    @R0
+
    D=M              // D = first number
    @R1
    D=D-M            // D = first number - second number
