@@ -20,9 +20,28 @@
 #
 
 
+# convert a non-negative integer into a 15-bit binary number
+def decToBin(n):
+    # construct a string up to 15 bits
+    power = 14
+    result = ""
+
+    # build a 15-bit binary number by seeing what powers of 2 divide into input
+    while power >= 0:
+        if n - 2**power >= 0:
+            result = result + "1"
+            n -= 2**power
+        else:
+            result = result + "0"
+
+        power -= 1
+    return result
+
+
 # open the file and separate into lines of an array of strings
 asm = open('asm/Max.asm', 'r')
 lines = asm.readlines()
+
 
 for line in lines:
     # ignore whitespace
@@ -45,3 +64,10 @@ for line in lines:
     # line.strip removes spaces at the beginning and at the end of the string
     #   likely equivalent to JavaScript's .trim()
     print(f'{line.strip()}')
+
+
+'''
+# decToBin tests
+for i in range(0, 17):
+    print(f'{decToBin(i)} → {i} 🐳')
+'''
