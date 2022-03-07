@@ -9,6 +9,7 @@
 #       remove midline comments → index for '//', slice
 #   decimal to binary conversion
 #   add dictionaries for c-instructions
+#   a-instruction vs c-instruction detection
 #
 #
 #
@@ -17,55 +18,9 @@
 #
 #
 #
-#
 
 
-# convert a non-negative integer into a 15-bit binary number
-def decToBin(n):
-    # construct a string of 0's and 1's up to 15 bits
-    power = 14
-    result = ""
-
-    # build a 15-bit binary number by seeing what powers of 2 divide into input
-    while power >= 0:
-        if n - 2**power >= 0:
-            result = result + "1"
-            n -= 2**power
-        else:
-            result = result + "0"
-
-        power -= 1
-    return result
-
-
-# open the file and separate into lines of an array of strings
-asm = open('asm/Max.asm', 'r')
-lines = asm.readlines()
-
-
-for line in lines:
-    # ignore whitespace
-    if line == '\n':
-        continue
-
-    # ignore entire-line comments
-    if line[0] == '/' and line[1] == '/':
-        continue
-
-    # ignore mid-line comments
-    try:
-        index = line.index('//')
-        line = line[0:index]
-    except ValueError:
-        # '//' wasn't found!
-        pass
-
-
-    # line.strip removes spaces at the beginning and at the end of the string
-    #   likely equivalent to JavaScript's .trim()
-    print(f'{line.strip()}')
-
-
+# dictionaries for translating c-instructions
 compDict = {
     "0":    "0101010",
     "1":    "0111111",
@@ -116,6 +71,9 @@ jumpDict = {
     "JLE":   "110",
     "JMP":   "111",
 }
+
+
+# symbolTable initialization for 1st pass
 symbolTable = {
     "R0": 0,
     "R1": 1,
@@ -141,6 +99,60 @@ symbolTable = {
     "THIS": 3,
     "THAT": 4,
 }
+
+
+# convert a non-negative integer into a 15-bit binary number
+def decToBin(n):
+    # construct a string of 0's and 1's up to 15 bits
+    power = 14
+    result = ""
+
+    # build a 15-bit binary number by seeing what powers of 2 divide into input
+    while power >= 0:
+        if n - 2**power >= 0:
+            result = result + "1"
+            n -= 2**power
+        else:
+            result = result + "0"
+
+        power -= 1
+    return result
+
+
+# open the file and separate into lines of an array of strings
+asm = open('asm/Max.asm', 'r')
+lines = asm.readlines()
+
+
+# process assembly file
+for line in lines:
+    # ignore whitespace
+    if line == '\n':
+        continue
+
+    # ignore entire-line comments
+    if line[0] == '/' and line[1] == '/':
+        continue
+
+    # ignore mid-line comments
+    try:
+        index = line.index('//')
+        line = line[0:index]
+    except ValueError:
+        # '//' wasn't found!
+        pass
+
+
+    # strip whitespace
+    line = line.strip()
+
+
+    # detect a- vs c-instruction based on first character
+    detection = 'a' if line[0] == '@' else 'c'
+    print(f'{line} → {detection}')  # .strip is python's .trim
+
+
+
 
 '''
 # decToBin tests
