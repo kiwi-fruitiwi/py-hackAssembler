@@ -15,9 +15,29 @@
 #   convert c-instructions
 #       detect component existence
 #       tokenize dest=comp;jump
+#       assemble machineCode translations
+#   pass RectL, MaxL symbol-less translation
+#       → REFACTOR
 #
+#   1st pass for symbol assembler: build symbolTable
+#       iterate through every line in the asm file
+#       if comment or whitespace → skip
+#       add label symbols to symbolTable, minding lineNumbers
+#           labels are not instructions, so their line number is next line
+#       fill firstPassResults, a string array used in the second pass ↓
 #
-#
+#   2nd pass for symbol assembler:
+#       set n to 16
+#       scan entire asm file again using firstPassResults
+#       if instruction is @symbol, look it up in symbolTable
+#           if (symbol, value) is found, use value to complete translation
+#           if not found:
+#               add (symbol, n) to symbolTable
+#               use n to complete the instruction's translation
+#                   @symbol becomes 0 decToBin(int(n))
+#                   n++
+#       if instruction is a c-instruction, translate normally
+#           encapsulate c-instruction translation as a function
 #
 #
 #
@@ -123,6 +143,46 @@ def decToBin(n):
     return result
 
 
+# translates a c-instruction in the form of dest=comp;jump into binary
+# @param: l → the line of assembly we want to translate
+#
+# in machine language, c-instructions are in the format 111 acccccc ddd jjj
+# identify if we have all three parts: dest=comp;jump
+def translateC(asm_line):
+    # always in the form dest=comp;jump, where dest and jump are optional
+    #   check existence of dest: '=' exists
+    #   check existence of jump: ';' exists
+    # the .index function in python throws ValueError if arg not found
+    #
+    scIndex = len(asm_line)  # default value if ';' is not found
+
+    try:
+        eqIndex = asm_line.index('=')
+        dest = asm_line[:eqIndex]
+        dest_bits = destDict[dest]
+    except ValueError:
+        # we add 1 to make eqIndex 0 later to account for '=' in comp
+        # otherwise, our comp is missing its first character when dest is
+        # missing
+        eqIndex = -1
+        dest_bits = '000'
+    # print(f' dest={dest} → {destBits}')
+
+    try:
+        scIndex = asm_line.index(';')
+        jump = asm_line[scIndex + 1:]
+        jump_bits = jumpDict[jump]
+    except ValueError:
+        jump_bits = '000'
+
+    # if neither '=' nor ';' were found, comp is just the entire line!
+    comp = asm_line[eqIndex + 1:scIndex]
+    comp_bits = compDict[comp]
+
+    # assemble machine code from 4 components: '111', dest, comp, jump
+    return '111' + comp_bits + dest_bits + jump_bits
+
+
 # open the file and separate into lines of an array of strings
 asm = open('asm/RectL.asm', 'r')
 lines = asm.readlines()
@@ -166,64 +226,8 @@ for line in lines:
         # line[1:] gives the decimal value
         machineCode += decToBin(int(line[1:]))
     elif detection == 'c':  # parse c-instructions here
-        # always in the form dest=comp;jump, where dest and jump are optional
-        #   check existence of dest: '=' exists
-        #   check existence of jump: ';' exists
-        # the .index function in python throws ValueError if arg not found
-        #
-        machineCode = '111'
-        dest = ''
-        comp = ''
-        jump = ''
-        eqIndex = 0  # default value if '=' is not found
-        scIndex = len(line)  # default value if ';' is not found
-
-
-        # translated machine code values for dest, comp, jump
-        destBits = ''
-        compBits = ''
-        jumpBits = ''
-
-        try:
-            eqIndex = line.index('=')
-            dest = line[:eqIndex]
-            destBits = destDict[dest]
-        except ValueError:
-            # we add 1 to make eqIndex 0 later to account for '=' in comp
-            # otherwise, our comp is missing its first character when dest is
-            # missing
-            eqIndex = -1
-            destBits = '000'
-        # print(f'dest={dest} → {destBits}')
-
-        try:
-            scIndex = line.index(';')
-            jump = line[scIndex+1:]
-            jumpBits = jumpDict[jump]
-        except ValueError:
-            jumpBits = '000'
-        # print(f'jump={jump} → {jumpBits}')
-
-        # if neither '=' nor ';' were found, comp is just the entire line!
-        comp = line[eqIndex+1:scIndex]
-        compBits = compDict[comp]
-        # print(f'comp={comp} → {compBits}')
-
-
-        # assemble machine code from 4 components: '111', dest, comp, jump
-        machineCode += compBits + destBits + jumpBits
-        # print(f'c-ins: {machineCode}')
+        machineCode = translateC(line)
 
     output += machineCode + '\n'
 
-    # print(f'{line} → {machineCode}')  # .strip is python's .trim
-
 print(f'{output}')
-
-
-
-'''
-# decToBin tests
-for i in range(0, 17):
-    print(f'{decToBin(i)} → {i} 🐳')
-'''
