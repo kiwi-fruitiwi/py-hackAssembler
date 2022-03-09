@@ -10,7 +10,11 @@
 #   decimal to binary conversion
 #   add dictionaries for c-instructions
 #   a-instruction vs c-instruction detection
-#
+#   convert a-instructions to 15-bit binary value
+#       parse the decimal value following @
+#   convert c-instructions
+#       detect component existence
+#       tokenize dest=comp;jump
 #
 #
 #
@@ -120,7 +124,7 @@ def decToBin(n):
 
 
 # open the file and separate into lines of an array of strings
-asm = open('asm/Max.asm', 'r')
+asm = open('asm/MaxL.asm', 'r')
 lines = asm.readlines()
 
 
@@ -149,6 +153,14 @@ for line in lines:
 
     # detect a- vs c-instruction based on first character
     detection = 'a' if line[0] == '@' else 'c'
+
+
+    # find the decimal value following @ in an a-instruction
+    if detection == 'a':
+        print(f'decimal value = {line[1:]}')
+
+
+
     print(f'{line} → {detection}')  # .strip is python's .trim
 
 
