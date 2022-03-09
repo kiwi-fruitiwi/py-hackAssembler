@@ -155,13 +155,52 @@ for line in lines:
     detection = 'a' if line[0] == '@' else 'c'
 
 
+    # initialize machine code translation
+    machineCode = '0'
+
+
     # find the decimal value following @ in an a-instruction
     if detection == 'a':
-        print(f'decimal value = {line[1:]}')
+        machineCode = '0'  # all a-instructions begin with '0'; c- with '111'
+        # line[1:] gives the decimal value
+        machineCode += decToBin(int(line[1:]))
 
+        print(f'')
+    elif detection == 'c':  # parse c-instructions here
+        # always in the form dest=comp;jump, where dest and jump are optional
+        #   check existence of dest: '=' exists
+        #   check existence of jump: ';' exists
+        # the .index function in python throws ValueError if arg not found
+        #
+        machineCode = '111'
+        dest = ''
+        comp = ''
+        jump = ''
+        eqIndex = 0  # default value if '=' is not found
+        scIndex = len(line)  # default value if ';' is not found
 
+        try:
+            eqIndex = line.index('=')
+            dest = line[:eqIndex]
+            print(f'dest={dest} → {destDict[dest]}')
+        except ValueError:
+            # we add 1 to make eqIndex 0 later to account for '=' in comp
+            # otherwise, our comp is missing its first character when dest is
+            # missing
+            eqIndex = -1
 
-    print(f'{line} → {detection}')  # .strip is python's .trim
+        try:
+            scIndex = line.index(';')
+            jump = line[scIndex+1:]
+            print(f'jump={jump} → {jumpDict[jump]}')
+        except ValueError:
+            pass
+
+        # if neither '=' nor ';' were found, comp is just the entire line!
+        comp = line[eqIndex+1:scIndex]
+        print(f'comp={comp} → {compDict[comp]}')
+
+    print(f'{line} → {machineCode}')  # .strip is python's .trim
 
 
 
