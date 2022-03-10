@@ -39,9 +39,6 @@
 #       if instruction is a c-instruction, translate normally
 #           encapsulate c-instruction translation as a function
 #
-#
-#
-#
 
 
 # dictionaries for translating c-instructions
@@ -125,8 +122,12 @@ symbolTable = {
 }
 
 
-# convert a non-negative integer into a 15-bit binary number
-def decToBin(n):
+def decToBin(n: int) -> str:
+    """
+    convert a non-negative integer into a 15-bit binary number
+    :param n:
+    :return:
+    """
     # construct a string of 0's and 1's up to 15 bits
     power = 14
     result = ""
@@ -143,12 +144,14 @@ def decToBin(n):
     return result
 
 
-# translates a c-instruction in the form of dest=comp;jump into binary
-# @param: l → the line of assembly we want to translate
-#
-# in machine language, c-instructions are in the format 111 acccccc ddd jjj
-# identify if we have all three parts: dest=comp;jump
-def translateC(asm_line):
+def translateC(asm_line: str) -> str:
+    """
+    translates a c-instruction in the form of dest=comp;jump into binary
+    in machine language, c-instructions are in the format 111 acccccc ddd jjj
+    identify if we have all three parts: dest=comp;jump
+    :param asm_line: the line of assembly we want to translate
+    :return: 16-bit machine code
+    """
     # always in the form dest=comp;jump, where dest and jump are optional
     #   check existence of dest: '=' exists
     #   check existence of jump: ';' exists
@@ -166,7 +169,7 @@ def translateC(asm_line):
         # missing
         eqIndex = -1
         dest_bits = '000'
-    # print(f' dest={dest} → {destBits}')
+    # print(f' dest={dest} → {dest_bits}')
 
     try:
         scIndex = asm_line.index(';')
