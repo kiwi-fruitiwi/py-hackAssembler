@@ -186,51 +186,58 @@ def translateC(asm_line: str) -> str:
     return '111' + comp_bits + dest_bits + jump_bits
 
 
-# open the file and separate into lines of an array of strings
-asm = open('asm/RectL.asm', 'r')
-lines = asm.readlines()
+def assembleL(file: str) -> None:
+    """
+    translates assembly language in a .asm file and outputs the result as
+    machine code. only works for symbol-Less .asm files.
+    :param file: the .asm file we are reading from
+    """
+    # open the file and separate into lines of an array of strings
+    asm = open(file, 'r')
+    lines = asm.readlines()
+    output = ''
+
+    for line in lines:
+        # ignore whitespace
+        if line == '\n':
+            continue
+
+        # ignore entire-line comments
+        if line[0] == '/' and line[1] == '/':
+            continue
+
+        # ignore mid-line comments
+        try:
+            index = line.index('//')
+            line = line[0:index]
+        except ValueError:
+            # '//' wasn't found!
+            pass
 
 
-# process assembly file; initialize accumulator string to hold all instructions
-output = ''
-for line in lines:
-    # ignore whitespace
-    if line == '\n':
-        continue
-
-    # ignore entire-line comments
-    if line[0] == '/' and line[1] == '/':
-        continue
-
-    # ignore mid-line comments
-    try:
-        index = line.index('//')
-        line = line[0:index]
-    except ValueError:
-        # '//' wasn't found!
-        pass
+        # strip whitespace
+        line = line.strip()
 
 
-    # strip whitespace
-    line = line.strip()
+        # detect a- vs c-instruction based on first character
+        detection = 'a' if line[0] == '@' else 'c'
 
 
-    # detect a- vs c-instruction based on first character
-    detection = 'a' if line[0] == '@' else 'c'
+        # initialize machine code translation
+        machineCode = '0'
 
 
-    # initialize machine code translation
-    machineCode = '0'
+        # find the decimal value following @ in an a-instruction
+        if detection == 'a':
+            machineCode = '0'  # all a-instructions begin with '0'; c with '111'
+            # line[1:] gives the decimal value
+            machineCode += decToBin(int(line[1:]))
+        elif detection == 'c':  # parse c-instructions here
+            machineCode = translateC(line)
+
+        output += machineCode + '\n'
+
+    print(f'{output}')
 
 
-    # find the decimal value following @ in an a-instruction
-    if detection == 'a':
-        machineCode = '0'  # all a-instructions begin with '0'; c- with '111'
-        # line[1:] gives the decimal value
-        machineCode += decToBin(int(line[1:]))
-    elif detection == 'c':  # parse c-instructions here
-        machineCode = translateC(line)
-
-    output += machineCode + '\n'
-
-print(f'{output}')
+assembleL('asm/RectL.asm')
