@@ -42,6 +42,8 @@
 
 
 # dictionaries for translating c-instructions
+from typing import List
+
 compDict = {
     "0":    "0101010",
     "1":    "0111111",
@@ -91,34 +93,6 @@ jumpDict = {
     "JNE":   "101",
     "JLE":   "110",
     "JMP":   "111",
-}
-
-
-# symbolTable initialization for 1st pass
-symbolTable = {
-    "R0": 0,
-    "R1": 1,
-    "R2": 2,
-    "R3": 3,
-    "R4": 4,
-    "R5": 5,
-    "R6": 6,
-    "R7": 7,
-    "R8": 8,
-    "R9": 9,
-    "R10": 10,
-    "R11": 11,
-    "R12": 12,
-    "R13": 13,
-    "R14": 14,
-    "R15": 15,
-    "SCREEN": 16384,
-    "KBD": 24576,
-    "SP": 0,
-    "LCL": 1,
-    "ARG": 2,
-    "THIS": 3,
-    "THAT": 4,
 }
 
 
@@ -186,6 +160,97 @@ def translateC(asm_line: str) -> str:
     return '111' + comp_bits + dest_bits + jump_bits
 
 
+def assemble(file: str) -> List[str]:
+    """
+    translates assembly language to machine code. takes care of symbols!
+    :param file:
+    :return:
+    """
+
+    # symbolTable initialization for 1st pass
+    symbolTable = {
+        "R0": 0,
+        "R1": 1,
+        "R2": 2,
+        "R3": 3,
+        "R4": 4,
+        "R5": 5,
+        "R6": 6,
+        "R7": 7,
+        "R8": 8,
+        "R9": 9,
+        "R10": 10,
+        "R11": 11,
+        "R12": 12,
+        "R13": 13,
+        "R14": 14,
+        "R15": 15,
+        "SCREEN": 16384,
+        "KBD": 24576,
+        "SP": 0,
+        "LCL": 1,
+        "ARG": 2,
+        "THIS": 3,
+        "THAT": 4,
+    }
+
+
+    # temporary storage for each line of translated machine code
+    lineOutput = ''
+
+    # create array of asm instructions to use in the second pass
+    firstPassResults = []
+
+    # first pass → build symbol table
+    #   iterate through every line in the asm file
+    #   if comment or whitespace: skip
+    #   add label symbols to symbolTable, with value = lineNumber+1
+    #   fill firstPassResults, a string array used in the second pass
+
+
+    # machine code indices in the ROM start at 0
+    lineNumber = 0
+
+    asm = open(file, 'r')
+    lines = asm.readlines()
+    for line in lines:
+        # ignore whitespace
+        if line == '\n':
+            continue
+
+        # ignore entire-line comments
+        if line[0] == '/' and line[1] == '/':
+            continue
+
+        # ignore mid-line comments
+        try:
+            index = line.index('//')
+            line = line[0:index]
+        except ValueError:
+            # '//' wasn't found!
+            pass
+
+        # strip whitespace
+        line = line.strip()
+
+
+        # look for label symbols: add them to symbolTable with a value of the
+        # line number of the following instruction. since these lines are not
+        # actual instructions, they are left out of firstPassResults
+        try:
+            index = line.index('(')
+            # assume the syntax is clean; last char should be ')'
+            # → remove parens to extract label
+            label = line[1:-1]
+            symbolTable[label] = lineNumber
+            print(f'added {label} to symbolTable with value {lineNumber}')
+        except ValueError:
+            lineNumber += 1
+            firstPassResults.append(line)
+
+    return firstPassResults
+
+
 def assembleL(file: str) -> None:
     """
     translates assembly language in a .asm file and outputs the result as
@@ -240,4 +305,4 @@ def assembleL(file: str) -> None:
     print(f'{output}')
 
 
-assembleL('asm/RectL.asm')
+print(assemble('asm/Max.asm'))
