@@ -160,11 +160,60 @@ def translateC(asm_line: str) -> str:
     return '111' + comp_bits + dest_bits + jump_bits
 
 
-def assemble(file: str) -> List[str]:
+def secondPass(instructions: List[str], symbol_table: dict) -> List[str]:
     """
-    translates assembly language to machine code. takes care of symbols!
+    reads through a list of .asm instructions without whitespace or comments.
+    uses the associated symbolTable to translate everything into machine code.
+    :param instructions: List[str] → a list of .asm instructions, formatted to
+        exclude whitespace and comments
+    :param symbol_table: dict → the instructions' associated symbol table
+    :return: List[str] → array of 16-bit machine code strings
+    """
+
+    machineCode = ''  # 16 bit str representing the translated instruction
+    result = []  # what we're returning: an array of 16-bit machine code strs
+    n = 16  # this is where we start new variables in our symbol table
+
+    for ins in instructions:
+        if ins[0] == '@':
+            # this is an a-instruction; it's followed by a number or variable
+            afterAmp = ins[1:]  # what follows the '@'
+
+            # afterAmp is a number!
+            if afterAmp[0].isnumeric():
+                machineCode = f'0{decToBin(int(afterAmp))}'
+            else:
+                # afterAmp is a variable name, which can't start with digits
+                symbol = afterAmp  # renaming variable for readability
+                if symbol not in symbol_table:
+                    # symbol doesn't exist yet, so we add it to our table
+                    print(f'[2: new variable] → adding [{symbol}] to symbol table with value {n}')
+                    symbol_table[symbol] = n
+
+                    machineCode = f'0{decToBin(n)}'
+                    n = n+1
+                else:  # symbol already exists in our table!
+                    symbol_value = symbol_table[symbol]
+                    print(f'{symbol} found: → {symbol_value}')
+                    machineCode = f'0{decToBin(symbol_value)}'
+
+            # append result of 3 above cases of a-instruction machine code
+            result.append(machineCode)
+
+        else:  # we must have a c-instruction
+            result.append(translateC(ins))
+
+    return result
+
+
+def firstPassSymbols(file: str) -> (List[str], dict):
+    """
+    reads through an assembly file, removing whitespace and comments.
+    updates a symbol table to use in the second pass of assembly.
     :param file:
-    :return:
+    :return: a tuple:
+        List[str] → a list of assembly instruction lines
+        dict → an updated symbolTable
     """
 
     # symbolTable initialization for 1st pass
@@ -243,12 +292,25 @@ def assemble(file: str) -> List[str]:
             # → remove parens to extract label
             label = line[1:-1]
             symbolTable[label] = lineNumber
-            print(f'added {label} to symbolTable with value {lineNumber}')
+            print(f'[1: label found] → added {label} to symbolTable with value {lineNumber}')
         except ValueError:
             lineNumber += 1
             firstPassResults.append(line)
 
-    return firstPassResults
+    return firstPassResults, symbolTable
+
+
+def assemble(file: str) -> List[str]:
+    """
+    returns a list of 16-bit machine code instructions, the result of assembling
+    the input .asm file. works with symbols and variables.
+    :param file: the .asm file we want to assemble into machine code
+    :return: a list of 16-bit machine code instructions
+    """
+    firstPass = firstPassSymbols(file)
+    instructions = firstPass[0]
+    symbol_table = firstPass[1]
+    return secondPass(instructions, symbol_table)
 
 
 def assembleL(file: str) -> None:
@@ -279,14 +341,11 @@ def assembleL(file: str) -> None:
             # '//' wasn't found!
             pass
 
-
         # strip whitespace
         line = line.strip()
 
-
         # detect a- vs c-instruction based on first character
         detection = 'a' if line[0] == '@' else 'c'
-
 
         # initialize machine code translation
         machineCode = '0'
@@ -305,4 +364,10 @@ def assembleL(file: str) -> None:
     print(f'{output}')
 
 
-print(assemble('asm/Max.asm'))
+def test():
+    code = assemble('asm/Pong.asm')
+    for line in code:
+        print(line)
+
+
+test()
